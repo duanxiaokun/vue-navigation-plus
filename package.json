@@ -1,38 +1,38 @@
 {
-  "name":"vue-navigation-plus",
-  "version":"1.0.0",
-  "description":"A page navigation library, built with vue3 and vue-router4.",
+  "name": "vue-navigation-plus",
+  "version": "1.0.0",
+  "description": "A page navigation library, built with vue3 and vue-router4.",
   "keywords": [
     "navigation",
     "vue",
     "vue-router",
     "keep-alive"
   ],
-  "main":"dist/vue-navigation.umd.js",
-  "module":"dist/vue-navigation.esm.js",
-  "license":"MIT",
+  "main": "dist/vue-navigation.umd.js",
+  "module": "dist/vue-navigation.esm.js",
+  "license": "MIT",
   "files": [
     "dist"
   ],
   "scripts": {
-    "dev":"vite",
-    "build":"vite build",
-    "serve":"vite preview",
-    "package":"rollup -c"
+    "dev": "vite",
+    "build": "vite build",
+    "serve": "vite preview",
+    "package": "rollup -c"
   },
 
   "repository": {
-    "type":"git",
-    "url":"git+https://github.com/zack24q/vue-navigation-plus.git"
+    "type": "git",
+    "url": "git+https://github.com/duanxiaokun/vue-navigation-plus.git"
   },
   "author": {
-    "name":"duanduan.zy",
-    "email":"zack24q@gmail.com"
+    "name": "duanduan.zy",
+    "email": "751030708@qq.com"
   },
   "bugs": {
-    "url":"https://github.com/zack24q/vue-navigation/issues"
+    "url": "https://github.com/duanxiaokun/vue-navigation-plus/issues"
   },
-  "homepage":"https://github.com/zack24q/vue-navigation#readme",
+  "homepage": "https://github.com/duanxiaokun/vue-navigation-plus#readme",
   "dependencies": {},
   "devDependencies": {
     "vue": "^3.0.5",
