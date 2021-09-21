@@ -1,6 +1,7 @@
-import {getCurrentInstance,onMounted,onUpdated,watch,onBeforeUnmount }from 'vue'
-import {useRoute }from 'vue-router'
-import {isVNode,getInnerChild,getComponentName,isAsyncWrapper,_cloneVNode,getKey,resetShapeFlag,matches }from '../util'
+import {getCurrentInstance, onMounted, onUpdated, watch, onBeforeUnmount, reactive } from 'vue'
+import { useRoute }from 'vue-router'
+import { isVNode, getInnerChild, getComponentName, isAsyncWrapper, _cloneVNode, getKey, resetShapeFlag, matches }from '../util'
+import Routes from '../routes'
 
 const navigation = {
     name: `navigation`,
@@ -14,6 +15,7 @@ const navigation = {
         max: [String, Number]
     },
     setup(props, { slots }) {
+        const selfRouters = reactive(Routes)
         const instance = getCurrentInstance();
         // KeepAlive communicates with the instantiated renderer via the
         // ctx where the renderer passes in its internals,
@@ -58,7 +60,7 @@ const navigation = {
         sharedContext.deactivate = (vnode) => {
             const instance = vnode.component;
             move(vnode, storageContainer, null, 1 /* LEAVE */, parentSuspense);
-            // queuePostRenderEffect(() => {
+            // queuePostRenderEffect(() => { // todo 评估注释之后的影响
             //     if (instance.da) {
             //         invokeArrayFns(instance.da);
             //     }
@@ -90,8 +92,7 @@ const navigation = {
             const cached = cache.get(key);
             if (!current || cached.type !== current.type) {
                 unmount(cached);
-            }
-            else if (current) {
+            } else if (current) {
                 // current active instance should no longer be kept-alive.
                 // we can't unmount it now but it might be later, so reset its flag now.
                 resetShapeFlag(current);
@@ -100,9 +101,13 @@ const navigation = {
             keys.delete(key);
         }
         // prune cache on include/exclude prop change
-        watch(() => [props.include, props.exclude], ([include, exclude]) => {
+        watch(() => [props.include, props.exclude, selfRouters], ([include, exclude, selfRouters]) => {
                 include && pruneCache(name => matches(include, name));
                 exclude && pruneCache(name => !matches(exclude, name));
+                // if not in self-maintained routers, it need to delete from cache
+                for (const key of cache.keys()) {
+                    !matches(selfRouters, key) && pruneCacheEntry(key)
+                }
             },
             // prune post-render after `current` has been updated
             { flush: 'post', deep: true });
@@ -144,12 +149,12 @@ const navigation = {
                 }
                 current = null;
                 return children;
-            }
-            else if (!isVNode(rawVNode) ||
+            } else if (!isVNode(rawVNode) ||
                 (!(rawVNode.shapeFlag & 4 /* STATEFUL_COMPONENT */) &&
                     !(rawVNode.shapeFlag & 128 /* SUSPENSE */))) {
                 current = null;
                 return rawVNode;
+                // todo 需要搞清楚 STATEFUL_COMPONENT 和 SUSPENSE
             }
             let vnode = getInnerChild(rawVNode);
             const comp = vnode.type;
@@ -166,7 +171,7 @@ const navigation = {
             }
             const selfKey = getKey(useRoute(), 'VNK');
             // const key = vnode.key == null ? comp : vnode.key;
-            const key = vnode.key ==null ? selfKey : vnode.key;// todo update comp改为selfKey
+            const key = vnode.key == null ? selfKey : vnode.key; // todo update comp改为selfKey
             const cachedVNode = cache.get(key);
             // clone vnode if it's reused because we are going to mutate it
             if (vnode.el) {
@@ -194,8 +199,7 @@ const navigation = {
                 // make this key the freshest
                 keys.delete(key);
                 keys.add(key);
-            }
-            else {
+            } else {
                 keys.add(key);
                 // prune oldest entry
                 if (max && keys.size > parseInt(max, 10)) {
