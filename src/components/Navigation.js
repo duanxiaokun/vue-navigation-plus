@@ -1,6 +1,6 @@
-import {getCurrentInstance,onMounted,onUpdated,watch,onBeforeUnmount }from 'vue'
-import {useRoute }from 'vue-router'
-import {isVNode,getInnerChild,getComponentName,isAsyncWrapper,_cloneVNode,getKey,resetShapeFlag,matches }from '../util'
+import { getCurrentInstance, onMounted, onUpdated, watch, onBeforeUnmount }from 'vue'
+import { useRoute }from 'vue-router'
+import { isVNode, getInnerChild, getComponentName, isAsyncWrapper, _cloneVNode, getKey, resetShapeFlag, matches }from '../util'
 
 const navigation = {
     name: `navigation`,
