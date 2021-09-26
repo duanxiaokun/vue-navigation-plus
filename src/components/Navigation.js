@@ -1,7 +1,62 @@
-import {getCurrentInstance, onMounted, onUpdated, watch, onBeforeUnmount, reactive } from 'vue'
+import {
+    getCurrentInstance,
+    onMounted,
+    onUpdated,
+    watch,
+    onBeforeUnmount,
+    reactive,
+    queuePostFlushCb,
+    callWithAsyncErrorHandling,
+    devtools
+} from 'vue'
 import { useRoute }from 'vue-router'
-import { isVNode, getInnerChild, getComponentName, isAsyncWrapper, _cloneVNode, getKey, resetShapeFlag, matches }from '../util'
+import {
+    isVNode,
+    getInnerChild,
+    getComponentName,
+    isAsyncWrapper,
+    _cloneVNode,
+    getKey,
+    resetShapeFlag,
+    matches,
+    setTransitionHooks
+}from '../util'
 import Routes from '../routes'
+
+const invokeArrayFns = (fns, arg) => {
+    for (let i = 0; i < fns.length; i++) {
+        fns[i](arg);
+    }
+};
+function queuePostRenderEffect(fn, suspense) {
+    if (suspense && suspense.pendingBranch) {
+        if (isArray(fn)) {
+            suspense.effects.push(...fn);
+        }
+        else {
+            suspense.effects.push(fn);
+        }
+    }
+    else {
+        queuePostFlushCb(fn);
+    }
+}
+
+function invokeVNodeHook(hook, instance, vnode, prevVNode = null) {
+    callWithAsyncErrorHandling(hook, instance, 7 /* VNODE_HOOK */, [
+        vnode,
+        prevVNode
+    ]);
+}
+
+function createDevtoolsComponentHook(hook) {
+    return (component) => {
+        if (!devtools)
+            return;
+        devtools.emit(hook, component.appContext.app, component.uid, component.parent ? component.parent.uid : undefined, component);
+    };
+}
+const devtoolsComponentAdded = /*#__PURE__*/ createDevtoolsComponentHook("component:added" /* COMPONENT_ADDED */);
 
 const navigation = {
     name: `navigation`,
@@ -42,38 +97,38 @@ const navigation = {
             move(vnode, container, anchor, 0 /* ENTER */, parentSuspense);
             // in case props have changed
             patch(instance.vnode, vnode, container, anchor, instance, parentSuspense, isSVG, vnode.slotScopeIds, optimized);
-            // queuePostRenderEffect(() => { // todo 评估注释之后的影响
-            //     instance.isDeactivated = false;
-            //     if (instance.a) {
-            //         invokeArrayFns(instance.a);
-            //     }
-            //     const vnodeHook = vnode.props && vnode.props.onVnodeMounted;
-            //     if (vnodeHook) {
-            //         invokeVNodeHook(vnodeHook, instance.parent, vnode);
-            //     }
-            // }, parentSuspense);
-            // {
-            //     // Update components tree
-            //     devtoolsComponentAdded(instance);
-            // }
+            queuePostRenderEffect(() => {
+                instance.isDeactivated = false;
+                if (instance.a) {
+                    invokeArrayFns(instance.a);
+                }
+                const vnodeHook = vnode.props && vnode.props.onVnodeMounted;
+                if (vnodeHook) {
+                    invokeVNodeHook(vnodeHook, instance.parent, vnode);
+                }
+            }, parentSuspense);
+            {
+                // Update components tree
+                devtoolsComponentAdded(instance);
+            }
         };
         sharedContext.deactivate = (vnode) => {
             const instance = vnode.component;
             move(vnode, storageContainer, null, 1 /* LEAVE */, parentSuspense);
-            // queuePostRenderEffect(() => { // todo 评估注释之后的影响
-            //     if (instance.da) {
-            //         invokeArrayFns(instance.da);
-            //     }
-            //     const vnodeHook = vnode.props && vnode.props.onVnodeUnmounted;
-            //     if (vnodeHook) {
-            //         invokeVNodeHook(vnodeHook, instance.parent, vnode);
-            //     }
-            //     instance.isDeactivated = true;
-            // }, parentSuspense);
-            // {
-            //     // Update components tree
-            //     devtoolsComponentAdded(instance);
-            // }
+            queuePostRenderEffect(() => {
+                if (instance.da) {
+                    invokeArrayFns(instance.da);
+                }
+                const vnodeHook = vnode.props && vnode.props.onVnodeUnmounted;
+                if (vnodeHook) {
+                    invokeVNodeHook(vnodeHook, instance.parent, vnode);
+                }
+                instance.isDeactivated = true;
+            }, parentSuspense);
+            {
+                // Update components tree
+                devtoolsComponentAdded(instance);
+            }
         };
         function unmount(vnode) {
             // reset the shapeFlag so it can be properly unmounted
@@ -129,8 +184,8 @@ const navigation = {
                     // current instance will be unmounted as part of keep-alive's unmount
                     resetShapeFlag(vnode);
                     // but invoke its deactivated hook here
-                    // const da = vnode.component.da; // todo 评估注释之后的影响
-                    // da && queuePostRenderEffect(da, suspense);
+                    const da = vnode.component.da;
+                    da && queuePostRenderEffect(da, suspense);
                     return;
                 }
                 unmount(cached);
@@ -145,7 +200,7 @@ const navigation = {
             const rawVNode = children[0];
             if (children.length > 1) {
                 {
-                    // warn$1(`KeepAlive should contain exactly one component child.`); todo 是否需要提醒
+                    console.error(`vue-navigation-plus should contain exactly one component child.`);
                 }
                 current = null;
                 return children;
@@ -171,7 +226,7 @@ const navigation = {
             }
             const selfKey = getKey(useRoute(), 'VNK');
             // const key = vnode.key == null ? comp : vnode.key;
-            const key = vnode.key == null ? selfKey : vnode.key; // todo update comp改为selfKey
+            const key = vnode.key == null ? selfKey : vnode.key; // todo comp改为selfKey 是否会有其它问题&是否是最佳方案，需要通过测试来验证
             const cachedVNode = cache.get(key);
             // clone vnode if it's reused because we are going to mutate it
             if (vnode.el) {
@@ -190,10 +245,10 @@ const navigation = {
                 // copy over mounted state
                 vnode.el = cachedVNode.el;
                 vnode.component = cachedVNode.component;
-                // if (vnode.transition) { // todo 需要考虑使用transition的情况
-                //     // recursively update transition hooks on subTree
-                //     setTransitionHooks(vnode, vnode.transition);
-                // }
+                if (vnode.transition) { //
+                    // recursively update transition hooks on subTree
+                    setTransitionHooks(vnode, vnode.transition);
+                }
                 // avoid vnode being mounted as fresh
                 vnode.shapeFlag |= 512 /* COMPONENT_KEPT_ALIVE */;
                 // make this key the freshest

@@ -135,3 +135,14 @@ export function matches(pattern, name) {
   /* istanbul ignore next */
   return false;
 }
+
+export function setTransitionHooks(vnode, hooks) {
+  if (vnode.shapeFlag & 6 /* COMPONENT */ && vnode.component) {
+    setTransitionHooks(vnode.component.subTree, hooks);
+  } else if (vnode.shapeFlag & 128 /* SUSPENSE */) {
+    vnode.ssContent.transition = hooks.clone(vnode.ssContent);
+    vnode.ssFallback.transition = hooks.clone(vnode.ssFallback);
+  } else {
+    vnode.transition = hooks;
+  }
+}
