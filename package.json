@@ -1,6 +1,6 @@
 {
   "name": "vue-navigation-plus",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "A page navigation library, built with vue3 and vue-router4.",
   "keywords": [
     "navigation",

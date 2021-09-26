@@ -1,9 +1,13 @@
 <template>
-      <router-view v-slot="{ Component }">
-          <navigation>
-            <component :is="Component"></component>
-          </navigation>
-      </router-view>
+  <div id="app">
+    <router-view v-slot="{ Component }">
+<!--      <transition name="fade">-->
+        <navigation>
+          <component :is="Component"></component>
+        </navigation>
+<!--      </transition>-->
+    </router-view>
+  </div>
 </template>
 
 <script>

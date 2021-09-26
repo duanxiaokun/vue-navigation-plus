@@ -22,10 +22,10 @@
       }
     },
     activated() {
-      // console.log('list activated')
+      console.log('list activated')
     },
     deactivated() {
-      // console.log('list deactivated')
+      console.log('list deactivated')
     },
     methods: {
       goDetail(id) {
